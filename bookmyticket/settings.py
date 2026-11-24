@@ -93,7 +93,6 @@ DATABASES = {
 
 DATABASES['default'] = dj_database_url.parse('postgresql://django_bookmyticket_user:1Fgb2loY4N2vqCPhPhXGOxERPrcqdmG0@dpg-dc0j33bm8hqs73emg08g-a.virginia-postgres.render.com/django_bookmyticket')
 
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
