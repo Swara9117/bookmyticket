@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',            # before staticfiles
     'django.contrib.staticfiles',
+    'cloudinary',
     'users',
     'movies',
 ]
@@ -133,3 +135,12 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('bookmyticket'),
+    'API_KEY': os.environ.get('383253653351959'),
+    'API_SECRET': os.environ.get('MB27FteNLyF_QtRTDDAXQk_nQ1g'),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+MEDIA_URL = '/media/'
