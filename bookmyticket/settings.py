@@ -144,3 +144,5 @@ CLOUDINARY_STORAGE = {
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 MEDIA_URL = '/media/'
+
+print("CLOUDINARY KEY SET:", bool(os.environ.get('CLOUDINARY_API_KEY')))
