@@ -8,3 +8,4 @@ typing_extensions==4.7.0
 cloudinary
 django-cloudinary-storage
 Pillow>=10.4.0
+whitenoise
