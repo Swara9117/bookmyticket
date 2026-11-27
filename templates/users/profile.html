@@ -46,6 +46,36 @@
         </div>
       </div>
       
+      <div class="card shadow mb-4">
+        <div class="card-header bg-dark text-white">
+          <h4 class="mb-0">Payments</h4>
+        </div>
+        <div class="card-body">
+          {% if orders %}
+            {% for order in orders %}
+              <div class="border rounded p-3 mb-3">
+                <strong>{{ order.reference }}</strong> · {{ order.movie.name }}<br>
+                {{ order.theater.name }} · {{ order.get_status_display }} · ₹{{ order.amount }}
+                {% for payment in order.payments.all %}
+                  {% if payment.status == 'captured' %}<br>Transaction {{ payment.provider_payment_id }}{% endif %}
+                {% endfor %}
+                <div class="mt-2">
+                  {% if order.status == 'paid' %}
+                    <a class="btn btn-sm btn-success" href="{% url 'download_ticket' order.reference %}">Download ticket</a>
+                    <form method="post" action="{% url 'cancel_order' order.reference %}" class="d-inline">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger" type="submit">Cancel booking</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="mb-0 text-muted">Payments appear here after you reserve seats and check out.</p>
+          {% endif %}
+        </div>
+      </div>
+
       <!-- Bookings Card -->
       <div class="card shadow">
         <div class="card-header bg-success text-white">
@@ -62,8 +92,20 @@
                       <p class="card-text">
                         <i class="fas fa-film me-2 text-muted"> </i>  {{ booking.theater.name }}<br>
                         <i class="fas fa-chair me-2 text-muted"> </i>  Seat: {{ booking.seat.seat_number }}<br>
-                        <i class="far fa-clock me-2 text-muted"> </i>  {{ booking.booked_at|date:"F d, Y H:i" }}
+                        <i class="far fa-clock me-2 text-muted"> </i>  {{ booking.booked_at|date:"F d, Y H:i" }}<br>
+                        Status: {{ booking.status }}
+                        {% if booking.order %}
+                          · {{ booking.order.status }}
+                          {% for payment in booking.order.payments.all %}
+                            {% if payment.status == 'captured' %}<br>Payment ref: {{ payment.provider_payment_id }}{% endif %}
+                          {% endfor %}
+                        {% endif %}
                       </p>
+                      {% if booking.order and booking.order.status == 'paid' %}
+                        <a class="btn btn-sm btn-outline-success" href="{% url 'download_ticket' booking.order.reference %}">Download ticket</a>
+                      {% elif not booking.order %}
+                        <a class="btn btn-sm btn-outline-success" href="{% url 'download_legacy_ticket' booking.id %}">Download ticket</a>
+                      {% endif %}
                     </div>
                   </div>
                 </div>

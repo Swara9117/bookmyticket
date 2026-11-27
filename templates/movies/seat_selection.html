@@ -38,49 +38,35 @@
           <h5 class="card-title text-center mb-4">Select Your Seats</h5>
           <div class="screen">All eyes this way please!</div>
 
-          <form method="POST">
+          <p class="text-center" id="hold-note">
+            {% if hold_expires_at %}You already hold seats on this show. Selecting again replaces that hold. Holds last 2 minutes.{% else %}Selected seats are held for 2 minutes after you continue to payment.{% endif %}
+          </p>
+          <form method="POST" id="seat-form">
             {% csrf_token %}
-            <div class="d-flex justify-content-center flex-wrap mb-4">
+            <div class="d-flex justify-content-center flex-wrap mb-4" id="seat-grid">
               {% for seat in seats %}
-              <div class="seat {% if seat.is_booked %}sold{% endif %}">
-                {% if not seat.is_booked %}
-                <input
-                  type="checkbox"
-                  name="seats"
-                  value="{{ seat.id }}"
-                  class="d-none"
-                  id="seat-{{ seat.id }}"
-                />
-                <label
-                  for="seat-{{ seat.id }}"
-                  class="w-100 h-100 d-flex align-items-center justify-content-center"
-                  >{{ seat.seat_number }}</label
-                >
-                {% else %} {{ seat.seat_number }} {% endif %}
+              <div class="seat status-{{ seat.live_status }}" id="seat-box-{{ seat.id }}">
+                {% if seat.live_status == 'available' or seat.live_status == 'mine' %}
+                <input type="checkbox" name="seats" value="{{ seat.id }}" class="d-none" id="seat-{{ seat.id }}" {% if seat.live_status == 'mine' %}checked{% endif %}>
+                <label for="seat-{{ seat.id }}" class="w-100 h-100 d-flex align-items-center justify-content-center mb-0">{{ seat.seat_number }}</label>
+                {% else %}
+                <span>{{ seat.seat_number }}</span>
+                {% endif %}
               </div>
               {% endfor %}
             </div>
-
-            <!-- Seat Legend -->
-            <div class="d-flex justify-content-center mb-4">
-              <div class="d-flex align-items-center me-4">
-                <div class="seat" style="background-color: white"></div>
-                <span class="ms-2">Available</span>
-              </div>
-              <div class="d-flex align-items-center me-4">
-                <div class="seat selected"></div>
-                <span class="ms-2">Selected</span>
-              </div>
-              <div class="d-flex align-items-center">
-                <div class="seat sold"></div>
-                <span class="ms-2">Sold</span>
-              </div>
+            <div class="d-flex justify-content-center flex-wrap mb-4">
+              <div class="d-flex align-items-center mr-3"><div class="seat"></div><span class="ml-2">Available</span></div>
+              <div class="d-flex align-items-center mr-3"><div class="seat selected"></div><span class="ml-2">Selected</span></div>
+              <div class="d-flex align-items-center mr-3"><div class="seat status-reserved"></div><span class="ml-2">Reserved</span></div>
+              <div class="d-flex align-items-center mr-3"><div class="seat status-mine"></div><span class="ml-2">Your hold</span></div>
+              <div class="d-flex align-items-center"><div class="seat status-booked"></div><span class="ml-2">Booked</span></div>
             </div>
 
             <!-- Book Button -->
             <div class="text-center">
               <button type="submit" class="btn btn-success btn-lg">
-                Book Selected Seats
+                Hold seats and pay
               </button>
             </div>
           </form>
@@ -112,9 +98,24 @@
     background-color: #28a745;
     color: white;
   }
-  .seat.sold {
+  .seat.sold,
+  .seat.status-booked {
     background-color: #ccc;
     cursor: not-allowed;
+  }
+  .seat.status-reserved {
+    background-color: #f0ad4e;
+    color: #fff;
+    cursor: not-allowed;
+  }
+  .seat.status-mine {
+    background-color: #17a2b8;
+    color: #fff;
+  }
+  .seat.status-mine input:checked + label,
+  .seat input:checked + label {
+    background-color: #28a745;
+    color: #fff;
   }
   .screen {
     margin: 20px 0;
@@ -167,4 +168,34 @@
       <button type="submit">Book selected seats</button>
 </form> -->
 
+<script>
+(function () {
+    var grid = document.getElementById('seat-grid');
+    function refresh() {
+        fetch('{% url "seat_status" theater.id %}')
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                var rebuild = false;
+                data.seats.forEach(function (seat) {
+                    var box = document.getElementById('seat-box-' + seat.id);
+                    if (!box) return;
+                    var input = box.querySelector('input');
+                    var selectable = seat.status === 'available' || seat.status === 'mine';
+                    if (Boolean(input) !== selectable) {
+                        rebuild = true;
+                        return;
+                    }
+                    if (input) {
+                        box.className = 'seat status-' + seat.status + (input.checked ? ' selected' : '');
+                    } else {
+                        box.className = 'seat status-' + seat.status;
+                    }
+                });
+                if (rebuild) window.location.reload();
+            })
+            .catch(function () {});
+    }
+    setInterval(refresh, 5000);
+})();
+</script>
 {% endblock %}

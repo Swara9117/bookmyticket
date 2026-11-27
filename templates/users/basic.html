@@ -18,11 +18,18 @@
     />
     <style>
       body {
-        font-family: Arial, sans-serif;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #f3f1ec;
+        color: #1c1a17;
       }
       .navbar {
-        background-color: #fff;
-        padding: 10px 20px;
+        background-color: #14120f !important;
+        padding: 12px 20px;
+        border-bottom: 3px solid #e0b44d;
+      }
+      .navbar-brand {
+        font-weight: 700;
+        letter-spacing: 0.04em;
       }
       .navbar-brand img {
         height: 40px;
@@ -102,6 +109,11 @@
             <li class="nav-item">
               <a class="nav-link" href="/movies">Movies</a>
             </li>
+            {% if user.is_staff %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            {% endif %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'profile' %}">Profile</a>
             </li>
@@ -130,7 +142,14 @@
       </div>
     </nav>
 
-    <div class="container">{% block content %} {% endblock %}</div>
+    <div class="container py-3">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+      {% block content %} {% endblock %}
+    </div>
     <footer class="footer mt-5">
       <div class="container">
         <div class="row">

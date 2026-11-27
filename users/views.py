@@ -3,11 +3,13 @@ from .forms import UserRegistrationForm, UserUpdateForm
 from django.shortcuts import render,redirect
 from django.contrib.auth import login,authenticate
 from django.contrib.auth.decorators import login_required
-from movies.models import Movie , Booking
+from movies.models import Movie , Booking, Order
+from movies.recommendations import for_home
 
 def home(request):
     movies= Movie.objects.all()
-    return render(request,'home.html',{'movies':movies})
+    collections = for_home(request.user if request.user.is_authenticated else None)
+    return render(request,'home.html',{'movies':movies, **collections})
 def register(request):
     if request.method == 'POST':
         form=UserRegistrationForm(request.POST)
@@ -35,7 +37,18 @@ def login_view(request):
 
 @login_required
 def profile(request):
-    bookings= Booking.objects.filter(user=request.user)
+    bookings = (
+        Booking.objects.filter(user=request.user)
+        .select_related('movie', 'theater', 'seat', 'order')
+        .prefetch_related('order__payments')
+        .order_by('-booked_at')
+    )
+    orders = (
+        Order.objects.filter(user=request.user)
+        .select_related('movie', 'theater')
+        .prefetch_related('payments', 'bookings__seat')
+        .order_by('-created_at')
+    )
     if request.method == 'POST':
         u_form = UserUpdateForm(request.POST, instance=request.user)
         if u_form.is_valid():
@@ -44,7 +57,7 @@ def profile(request):
     else:
         u_form = UserUpdateForm(instance=request.user)
 
-    return render(request, 'users/profile.html', {'u_form': u_form,'bookings':bookings})
+    return render(request, 'users/profile.html', {'u_form': u_form,'bookings':bookings, 'orders': orders})
 
 @login_required
 def reset_password(request):

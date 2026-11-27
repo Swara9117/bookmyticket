@@ -24,6 +24,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-only-insecure-key-change-me')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app']
+for _host in os.environ.get('ALLOWED_HOSTS', '').split(','):
+    if _host.strip() and _host.strip() not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_host.strip())
 
 
 INSTALLED_APPS = [
@@ -51,7 +54,17 @@ MIDDLEWARE = [
 ]
 
 AUTH_USER_MODEL = 'auth.User'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+if os.environ.get('EMAIL_HOST'):
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.environ.get('EMAIL_HOST')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'tickets@bookmyseat.local')
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'tickets@bookmyseat.local')
 
 ROOT_URLCONF = 'bookmyticket.urls'
 LOGIN_URL = '/login/'
@@ -121,3 +134,39 @@ if os.environ.get('CLOUDINARY_URL'):
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- Payments, mail, and background jobs ----------------------------------
+# Set these in the host's environment (Vercel project settings). Never commit them.
+PAYMENT_PROVIDER = os.environ.get('PAYMENT_PROVIDER', '').lower()
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
+
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
+CRON_SECRET = os.environ.get('CRON_SECRET', '')
+
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', '')
+CELERY_RESULT_BACKEND = None
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_TASK_ACKS_LATE = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_TRANSPORT_OPTIONS = {'socket_connect_timeout': 2, 'socket_timeout': 2}
+if CELERY_BROKER_URL.startswith('rediss://'):
+    import ssl
+    CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': ssl.CERT_REQUIRED}
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
+for _origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(','):
+    if _origin.strip():
+        CSRF_TRUSTED_ORIGINS.append(_origin.strip())
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

@@ -1,0 +1,114 @@
+{% extends "users/basic.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+        <h1 class="h3 mb-0">Admin dashboard</h1>
+        <a class="btn btn-outline-dark" href="{% url 'export_dashboard' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">Export CSV</a>
+    </div>
+    <form method="get" class="form-inline mb-4">
+        <label class="mr-2" for="start">From</label>
+        <input id="start" class="form-control mr-3 mb-2" type="date" name="start" value="{{ start|date:'Y-m-d' }}">
+        <label class="mr-2" for="end">To</label>
+        <input id="end" class="form-control mr-3 mb-2" type="date" name="end" value="{{ end|date:'Y-m-d' }}">
+        <button class="btn btn-primary mb-2" type="submit">Apply range</button>
+    </form>
+
+    <div class="row">
+        <div class="col-md-3 mb-3"><div class="card card-body"><div class="text-muted">Today</div><strong>₹{{ period_revenue.today|default:0 }}</strong></div></div>
+        <div class="col-md-3 mb-3"><div class="card card-body"><div class="text-muted">This week</div><strong>₹{{ period_revenue.week|default:0 }}</strong></div></div>
+        <div class="col-md-3 mb-3"><div class="card card-body"><div class="text-muted">This month</div><strong>₹{{ period_revenue.month|default:0 }}</strong></div></div>
+        <div class="col-md-3 mb-3"><div class="card card-body"><div class="text-muted">This year</div><strong>₹{{ period_revenue.year|default:0 }}</strong></div></div>
+    </div>
+    <div class="row">
+        <div class="col-md-3 mb-3"><div class="card card-body"><div class="text-muted">Range revenue</div><strong>₹{{ range_revenue }}</strong></div></div>
+        <div class="col-md-3 mb-3"><div class="card card-body"><div class="text-muted">Bookings</div><strong>{{ range_bookings }}</strong></div></div>
+        <div class="col-md-3 mb-3"><div class="card card-body"><div class="text-muted">Cancellations</div><strong>{{ cancellations }}</strong></div></div>
+        <div class="col-md-3 mb-3"><div class="card card-body"><div class="text-muted">New users</div><strong>{{ new_users }}</strong></div></div>
+    </div>
+    <p>Refunds in range: {{ refunds.count|default:0 }} (₹{{ refunds.amount|default:0 }}), pending {{ refunds.pending|default:0 }}.</p>
+
+    <h2 class="h5">Daily booking trend</h2>
+    <table class="table table-sm">
+        <thead><tr><th>Day</th><th>Bookings</th><th>Revenue</th></tr></thead>
+        <tbody>
+        {% for row in daily %}
+        <tr>
+            <td>{{ row.bucket }}</td>
+            <td>{{ row.total }}</td>
+            <td>₹{{ row.revenue }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No bookings in this range.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h2 class="h5">Most booked movies</h2>
+            <table class="table table-sm">
+                <thead><tr><th>Movie</th><th>Tickets</th><th>Revenue</th></tr></thead>
+                <tbody>
+                {% for row in top_movies %}
+                <tr><td>{{ row.movie__name }}</td><td>{{ row.total }}</td><td>₹{{ row.revenue }}</td></tr>
+                {% empty %}<tr><td colspan="3">No data.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h2 class="h5">Top theatres</h2>
+            <table class="table table-sm">
+                <thead><tr><th>Theatre</th><th>Tickets</th><th>Revenue</th></tr></thead>
+                <tbody>
+                {% for row in top_theaters %}
+                <tr><td>{{ row.theater__name }}</td><td>{{ row.total }}</td><td>₹{{ row.revenue }}</td></tr>
+                {% empty %}<tr><td colspan="3">No data.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h2 class="h5">Occupancy</h2>
+    <table class="table table-sm">
+        <thead><tr><th>Theatre</th><th>Movie</th><th>Booked</th><th>Seats</th><th>Occupancy</th></tr></thead>
+        <tbody>
+        {% for row in occupancy %}
+        <tr>
+            <td>{{ row.theater__name }}</td>
+            <td>{{ row.theater__movie__name }}</td>
+            <td>{{ row.booked }}</td>
+            <td>{{ row.total }}</td>
+            <td>{{ row.occupancy|floatformat:1 }}%</td>
+        </tr>
+        {% empty %}<tr><td colspan="5">No seats yet.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-md-4">
+            <h2 class="h5">Peak hours</h2>
+            <ul>{% for row in peak_hours %}<li>{{ row.hour }}:00 · {{ row.total }} bookings</li>{% empty %}<li>No data.</li>{% endfor %}</ul>
+        </div>
+        <div class="col-md-4">
+            <h2 class="h5">Weekly</h2>
+            <ul>{% for row in weekly %}<li>{{ row.bucket|date:"Y-m-d" }} · {{ row.total }} · ₹{{ row.revenue }}</li>{% empty %}<li>No data.</li>{% endfor %}</ul>
+        </div>
+        <div class="col-md-4">
+            <h2 class="h5">Monthly / yearly</h2>
+            <ul>
+                {% for row in monthly %}<li>Month {{ row.bucket|date:"M Y" }} · {{ row.total }} · ₹{{ row.revenue }}</li>{% endfor %}
+                {% for row in yearly %}<li>Year {{ row.bucket|date:"Y" }} · {{ row.total }} · ₹{{ row.revenue }}</li>{% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <h2 class="h5">User growth</h2>
+    <ul>{% for row in user_growth %}<li>{{ row.bucket }} · {{ row.total }} new users</li>{% empty %}<li>No new users in this range.</li>{% endfor %}</ul>
+
+    <details class="mt-4">
+        <summary>How these queries stay fast past 100,000 bookings</summary>
+        <pre class="mt-3 p-3 bg-light" style="white-space: pre-wrap;">{{ performance_notes }}</pre>
+    </details>
+</div>
+{% endblock %}

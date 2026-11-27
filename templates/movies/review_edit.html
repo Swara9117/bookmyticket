@@ -1,0 +1,13 @@
+{% extends "users/basic.html" %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+    <h1 class="h3">Edit your review of {{ review.movie.name }}</h1>
+    <form method="post" class="card card-body">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn btn-primary" type="submit">Save review</button>
+        <a class="btn btn-link" href="{% url 'movie_detail' review.movie_id %}">Back to movie</a>
+    </form>
+</div>
+{% endblock %}

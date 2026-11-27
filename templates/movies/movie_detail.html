@@ -1,0 +1,117 @@
+{% extends "users/basic.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <img src="{{ movie.image.url }}" class="img-fluid rounded" alt="{{ movie.name }}">
+            {% if movie.posters.all %}
+            <div class="row mt-2">
+                {% for poster in movie.posters.all %}
+                <div class="col-4 mb-2">
+                    <img src="{{ poster.image.url }}" class="img-fluid rounded" alt="{{ poster.caption|default:movie.name }}">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <h1>{{ movie.name }}</h1>
+            <p class="text-muted mb-2">
+                {{ movie.display_rating }} / 10
+                {% if movie.review_count %} · {{ movie.review_count }} viewer ratings{% endif %}
+                {% if movie.age_certification %} · {{ movie.age_certification }}{% endif %}
+                {% if movie.duration_minutes %} · {{ movie.duration_minutes }} min{% endif %}
+                {% if movie.release_date %} · {{ movie.release_date }}{% endif %}
+            </p>
+            <p>
+                {% for genre in movie.genres.all %}
+                <span class="badge badge-secondary">{{ genre.name }}</span>
+                {% endfor %}
+                {% for language in movie.languages.all %}
+                <span class="badge badge-light border">{{ language.name }}</span>
+                {% endfor %}
+            </p>
+            <p>{{ movie.description }}</p>
+            <p><strong>Cast:</strong> {{ movie.cast }}</p>
+            {% if movie.cast_roles.all %}
+            <ul>
+                {% for role in movie.cast_roles.all %}
+                <li>{{ role.member.name }}{% if role.character %} as {{ role.character }}{% endif %}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            <a class="btn btn-primary" href="{% url 'theater_list' movie.id %}">Book tickets</a>
+        </div>
+    </div>
+
+    {% if embed_url %}
+    <h2 class="h4 mt-4">Trailer</h2>
+    <div class="embed-responsive embed-responsive-16by9 mb-4">
+        <iframe class="embed-responsive-item" src="{{ embed_url }}" title="Trailer for {{ movie.name }}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    {% endif %}
+
+    <h2 class="h4 mt-4">Reviews</h2>
+    {% if can_review %}
+    <form method="post" action="{% url 'submit_review' movie.id %}" class="card card-body mb-3">
+        {% csrf_token %}
+        {{ review_form.as_p }}
+        <button class="btn btn-success" type="submit">Submit verified review</button>
+    </form>
+    {% elif not user.is_authenticated %}
+    <p><a href="{% url 'login' %}">Log in</a> to review this movie after you have watched it.</p>
+    {% elif own_review %}
+    <p>You already reviewed this movie. <a href="{% url 'edit_review' own_review.id %}">Edit your review</a>.</p>
+    {% else %}
+    <p class="text-muted">Ratings open after you book this movie and the show has started.</p>
+    {% endif %}
+
+    {% for review in reviews %}
+    <div class="border rounded p-3 mb-3">
+        <strong>{{ review.user.username }}</strong>
+        <span class="badge badge-success">Verified viewer</span>
+        <span class="text-warning">{{ review.score }}/5</span>
+        <p class="mb-2 mt-2">{{ review.body }}</p>
+        {% if user.is_authenticated and user.id != review.user_id %}
+        <form method="post" action="{% url 'report_review' review.id %}" class="form-inline">
+            {% csrf_token %}
+            <input class="form-control form-control-sm mr-2" name="reason" placeholder="Report reason" required maxlength="300">
+            <button class="btn btn-sm btn-outline-danger" type="submit">Report</button>
+        </form>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p class="text-muted">No reviews yet.</p>
+    {% endfor %}
+
+    {% if similar %}
+    <h2 class="h4 mt-4">Similar movies</h2>
+    <div class="row">
+        {% for item in similar %}
+        <div class="col-6 col-md-3 mb-3">
+            <a href="{% url 'movie_detail' item.id %}">{{ item.name }}</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if trending %}
+    <h2 class="h4 mt-3">Trending</h2>
+    <div class="row">
+        {% for item in trending %}
+        <div class="col-6 col-md-3 mb-3"><a href="{% url 'movie_detail' item.id %}">{{ item.name }}</a></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if new_releases %}
+    <h2 class="h4 mt-3">Recently released</h2>
+    <div class="row">
+        {% for item in new_releases %}
+        <div class="col-6 col-md-3 mb-3"><a href="{% url 'movie_detail' item.id %}">{{ item.name }}</a></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
